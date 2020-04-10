@@ -110,7 +110,7 @@ func AuthCenterLogin(c echo.Context) (err error) {
 		model.DB().Create(&model.CoreGrained{Username: u.Username, Permissions: g, Rule: "guest", Group: ix})
 	}
 
-	token, tokenErr := lib.JwtAuth(u.Username, account.Rule)
+	token, tokenErr := lib.JwtAuth(account.Username, account.Rule)
 	if tokenErr != nil {
 		c.Logger().Error(tokenErr.Error())
 		return
