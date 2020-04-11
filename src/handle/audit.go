@@ -216,6 +216,8 @@ func ExecuteOrder(c echo.Context) (err error) {
 		Table:    order.Table,
 	}
 
+	fmt.Println("LibraAuditOrder pb: ", s.String())
+
 	if order.Status != 2 && order.Status != 5 {
 		c.Logger().Error("工单已执行过！操作不符合幂等性")
 		return c.JSON(http.StatusOK, "工单已执行过！操作不符合幂等性")
@@ -319,7 +321,7 @@ func OscPercent(c echo.Context) (err error) {
 
 func OscKill(c echo.Context) (err error) {
 	r := c.Param("work_id")
-	lib.ExKillOsc(&pb.LibraAuditOrder{WorkId:r})
+	lib.ExKillOsc(&pb.LibraAuditOrder{WorkId: r})
 	return c.JSON(http.StatusOK, "kill指令已发送!如工单最后显示为执行失败则生效!")
 }
 
