@@ -169,7 +169,7 @@ func UserGeneralLogin(c echo.Context) (err error) {
 	var account model.CoreAccount
 	if !model.DB().Where("email = ?", u.Username).First(&account).RecordNotFound() {
 		if lib.AuthCheckPassword(u.Password, account.Password) {
-			token, tokenErr := lib.JwtAuth(u.Username, account.Rule)
+			token, tokenErr := lib.JwtAuth(account.Username, account.Rule)
 			if tokenErr != nil {
 				c.Logger().Error(tokenErr)
 				return
