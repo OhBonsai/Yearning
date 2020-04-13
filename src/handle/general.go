@@ -78,7 +78,9 @@ func GeneralSource(c echo.Context) (err error) {
 			inter = lib.Intersect(p.DMLSource, sList)
 		}
 		if x == "ddl" {
+			// HardCode DDL 只能阿辉黑羽审核
 			inter = lib.Intersect(p.DDLSource, sList)
+			return c.JSON(http.StatusOK, map[string]interface{}{"assigned": []string{"ahui", "HeiYu"}, "source": inter, "x": x})
 		}
 
 		if x == "query" {
