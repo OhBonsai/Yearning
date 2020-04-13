@@ -58,6 +58,7 @@ func GeneralSource(c echo.Context) (err error) {
 
 	var s model.CoreGrained
 	var p model.PermissionList
+	var u model.CoreAccount
 	var sList []string
 	var source []model.CoreDataSource
 	var inter []string
@@ -68,6 +69,8 @@ func GeneralSource(c echo.Context) (err error) {
 		return err
 	}
 
+	model.DB().Where("username = ?", user).First(&u)
+
 	model.DB().Select("source").Where("id_c =?", unescape).Find(&source)
 
 	if source != nil {
@@ -76,6 +79,15 @@ func GeneralSource(c echo.Context) (err error) {
 		}
 		if x == "dml" {
 			inter = lib.Intersect(p.DMLSource, sList)
+			var leader model.CoreAccount
+			model.DB().Where("rule = ? and department like ?", "admin", "%"+u.Department+"%").First(&leader)
+
+			if leader.Username == "" || u.Department == "基础支撑" {
+				// 没找到
+				return c.JSON(http.StatusOK, map[string]interface{}{"assigned": []string{"ahui", "HeiYu"}, "source": inter, "x": x})
+			} else {
+				return c.JSON(http.StatusOK, map[string]interface{}{"assigned": []string{leader.Username}, "source": inter, "x": x})
+			}
 		}
 		if x == "ddl" {
 			// HardCode DDL 只能阿辉黑羽审核
