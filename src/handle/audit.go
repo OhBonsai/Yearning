@@ -18,6 +18,7 @@ import (
 	"Yearning-go/src/model"
 	pb "Yearning-go/src/proto"
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"github.com/labstack/echo/v4"
 	"github.com/pingcap/parser"
 	"net/http"
@@ -216,8 +217,6 @@ func ExecuteOrder(c echo.Context) (err error) {
 		Table:    order.Table,
 	}
 
-	fmt.Println("LibraAuditOrder pb: ", s.String())
-
 	if order.Status != 2 && order.Status != 5 {
 		c.Logger().Error("工单已执行过！操作不符合幂等性")
 		return c.JSON(http.StatusOK, "工单已执行过！操作不符合幂等性")
@@ -262,10 +261,12 @@ func ExecuteOrder(c echo.Context) (err error) {
 					break
 				}
 			} else {
+				fmt.Println("staring call grpc!")
+				fmt.Println(proto.MarshalTextString(&s))
 				lib.ExDMLClient(&s)
 			}
-
 		}()
+		fmt.Println("grpc call is finish")
 		model.DB().Model(&model.CoreSqlOrder{}).Where("work_id =?", order.WorkId).Updates(map[string]interface{}{"status": 3})
 	}
 	return c.JSON(http.StatusOK, "工单已执行！")
