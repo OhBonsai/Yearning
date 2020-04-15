@@ -149,7 +149,7 @@ func MessagePush(c echo.Context, workid string, t uint, reject string) {
 	var user model.CoreAccount
 	var o model.CoreSqlOrder
 	var ding, mail, wc string
-	model.DB().Select("work_id,username,text,assigned,executor,sql,type").Where("work_id =?", workid).First(&o)
+	model.DB().Where("work_id =?", workid).First(&o)
 	model.DB().Select("email").Where("username =?", o.Username).First(&user)
 	s := model.GloMessage
 	s.ToUser = user.Email
