@@ -83,8 +83,9 @@ var TmplQueryRefer = `# Yearning查询申请通知 #  \n \n  **工单编号:**  
 var TmplSuccessQuery = `# Yearning查询申请通知 #  \n \n  **工单编号:**  %s \n \n **提交人员:**  <font color=\"#78beea\">%s</font> \n \n **审核人员:** <font color=\"#fe8696\">%s</font> \n \n **平台地址:** http://%s \n \n **状态:** <font color=\"#3fd2bd\">同意</font>`
 var TmplRejectQuery = `# Yearning查询申请通知 #  \n \n  **工单编号:**  %s \n \n **提交人员:**  <font color=\"#78beea\">%s</font> \n \n **审核人员:** <font color=\"#fe8696\">%s</font> \n \n **平台地址:** http://%s \n \n **状态:** <font color=\"#df117e\">已驳回</font>`
 
-var TmplReferDDLWechat = `# %s打算对数据库%s做DDL, SQL为
-%s
+var TmplReferDDLWechat = `# %s打算对数据库%s做DDL
+> 感觉不对劲，快去找%s
+> SQL为%s
 `
 
 const YEARNING_ADDRESS = "http://new-yearning.duolainc.com"
@@ -148,7 +149,7 @@ func MessagePush(c echo.Context, workid string, t uint, reject string) {
 	var user model.CoreAccount
 	var o model.CoreSqlOrder
 	var ding, mail, wc string
-	model.DB().Select("work_id,username,text,assigned,executor").Where("work_id =?", workid).First(&o)
+	model.DB().Select("work_id,username,text,assigned,executor,sql,type").Where("work_id =?", workid).First(&o)
 	model.DB().Select("email").Where("username =?", o.Username).First(&user)
 	s := model.GloMessage
 	s.ToUser = user.Email
@@ -170,7 +171,7 @@ func MessagePush(c echo.Context, workid string, t uint, reject string) {
 		mail = fmt.Sprintf(TmplMail, "提交", o.WorkId, o.Username, YEARNING_ADDRESS, YEARNING_ADDRESS, "已提交")
 		if o.Type == 0 {
 			// ddl
-			wc = fmt.Sprintf(TmplReferDDLWechat, o.Username, o.Source, o.SQL)
+			wc = fmt.Sprintf(TmplReferDDLWechat, o.Username, o.Source, o.Assigned, o.SQL)
 		}
 
 	}
