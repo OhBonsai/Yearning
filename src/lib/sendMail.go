@@ -230,6 +230,7 @@ func MessagePush(c echo.Context, workid string, t uint, reject string) {
 		model.DB().Where("rule = ? and department like ?", "admin", "%"+user.Department+"%").First(&leader)
 		if leader.Username != "" {
 			fmt.Println(leader.Username)
+			fmt.Println(o.SQL)
 			go SentWechatMarkDown("PenZai", wc, GetWechatAppToken())
 		}
 	}
