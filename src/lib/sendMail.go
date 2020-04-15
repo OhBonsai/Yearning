@@ -168,7 +168,11 @@ func MessagePush(c echo.Context, workid string, t uint, reject string) {
 		s.ToUser = user.Email
 		ding = fmt.Sprintf(TmplReferDing, o.WorkId, o.Username, o.Assigned, YEARNING_ADDRESS, o.Text)
 		mail = fmt.Sprintf(TmplMail, "提交", o.WorkId, o.Username, YEARNING_ADDRESS, YEARNING_ADDRESS, "已提交")
-		wc = fmt.Sprintf(TmplReferDDLWechat, o.Username, o.Source, o.SQL)
+		if o.Type == 0 {
+			// ddl
+			wc = fmt.Sprintf(TmplReferDDLWechat, o.Username, o.Source, o.SQL)
+		}
+
 	}
 
 	if t == 4 {
