@@ -83,6 +83,12 @@ var TmplQueryRefer = `# Yearning查询申请通知 #  \n \n  **工单编号:**  
 var TmplSuccessQuery = `# Yearning查询申请通知 #  \n \n  **工单编号:**  %s \n \n **提交人员:**  <font color=\"#78beea\">%s</font> \n \n **审核人员:** <font color=\"#fe8696\">%s</font> \n \n **平台地址:** http://%s \n \n **状态:** <font color=\"#3fd2bd\">同意</font>`
 var TmplRejectQuery = `# Yearning查询申请通知 #  \n \n  **工单编号:**  %s \n \n **提交人员:**  <font color=\"#78beea\">%s</font> \n \n **审核人员:** <font color=\"#fe8696\">%s</font> \n \n **平台地址:** http://%s \n \n **状态:** <font color=\"#df117e\">已驳回</font>`
 
+var TmplReferDDLWechat = `# %s打算对数据库%s做DDL, SQL为
+%s
+`
+
+const YEARNING_ADDRESS = "http://new-yearning.duolainc.com"
+
 func SendMail(c echo.Context, mail model.Message, tmpl string) {
 	m := gomail.NewMessage()
 	m.SetHeader("From", mail.User)
@@ -141,44 +147,45 @@ func SendDingMsg(c echo.Context, msg model.Message, sv string) {
 func MessagePush(c echo.Context, workid string, t uint, reject string) {
 	var user model.CoreAccount
 	var o model.CoreSqlOrder
-	var ding, mail string
+	var ding, mail, wc string
 	model.DB().Select("work_id,username,text,assigned,executor").Where("work_id =?", workid).First(&o)
 	model.DB().Select("email").Where("username =?", o.Username).First(&user)
 	s := model.GloMessage
 	s.ToUser = user.Email
 
 	if t == 0 {
-		ding = fmt.Sprintf(TmplRejectDing, o.WorkId, o.Username, o.Assigned, model.Host, o.Text, reject)
-		mail = fmt.Sprintf(TmplRejectMail, o.WorkId, o.Username, model.Host, model.Host, reject)
+		ding = fmt.Sprintf(TmplRejectDing, o.WorkId, o.Username, o.Assigned, YEARNING_ADDRESS, o.Text, reject)
+		mail = fmt.Sprintf(TmplRejectMail, o.WorkId, o.Username, YEARNING_ADDRESS, YEARNING_ADDRESS, reject)
 	}
 
 	if t == 1 {
-		ding = fmt.Sprintf(TmplSuccessDing, o.WorkId, o.Username, o.Assigned, model.Host, o.Text)
-		mail = fmt.Sprintf(TmplMail, "执行", o.WorkId, o.Username, model.Host, model.Host, "执行成功")
+		ding = fmt.Sprintf(TmplSuccessDing, o.WorkId, o.Username, o.Assigned, YEARNING_ADDRESS, o.Text)
+		mail = fmt.Sprintf(TmplMail, "执行", o.WorkId, o.Username, YEARNING_ADDRESS, YEARNING_ADDRESS, "执行成功")
 	}
 
 	if t == 2 {
 		model.DB().Select("email").Where("username =?", o.Assigned).First(&user)
 		s.ToUser = user.Email
-		ding = fmt.Sprintf(TmplReferDing, o.WorkId, o.Username, o.Assigned, model.Host, o.Text)
-		mail = fmt.Sprintf(TmplMail, "提交", o.WorkId, o.Username, model.Host, model.Host, "已提交")
+		ding = fmt.Sprintf(TmplReferDing, o.WorkId, o.Username, o.Assigned, YEARNING_ADDRESS, o.Text)
+		mail = fmt.Sprintf(TmplMail, "提交", o.WorkId, o.Username, YEARNING_ADDRESS, YEARNING_ADDRESS, "已提交")
+		wc = fmt.Sprintf(TmplReferDDLWechat, o.Username, o.Source, o.SQL)
 	}
 
 	if t == 4 {
-		ding = fmt.Sprintf(TmplFailedDing, o.WorkId, o.Username, o.Assigned, model.Host, o.Text)
-		mail = fmt.Sprintf(TmplMail, "执行", o.WorkId, o.Username, model.Host, model.Host, "执行失败")
+		ding = fmt.Sprintf(TmplFailedDing, o.WorkId, o.Username, o.Assigned, YEARNING_ADDRESS, o.Text)
+		mail = fmt.Sprintf(TmplMail, "执行", o.WorkId, o.Username, YEARNING_ADDRESS, YEARNING_ADDRESS, "执行失败")
 	}
 
 	if t == 5 {
 		model.DB().Select("email").Where("username =?", o.Executor).First(&user)
 		s.ToUser = user.Email
-		ding = fmt.Sprintf(TmplPerformDing, o.WorkId, o.Username, o.Assigned, model.Host, o.Text)
-		mail = fmt.Sprintf(TmplMail, "转交", o.WorkId, o.Username, model.Host, model.Host, "等待执行人执行")
+		ding = fmt.Sprintf(TmplPerformDing, o.WorkId, o.Username, o.Assigned, YEARNING_ADDRESS, o.Text)
+		mail = fmt.Sprintf(TmplMail, "转交", o.WorkId, o.Username, YEARNING_ADDRESS, YEARNING_ADDRESS, "等待执行人执行")
 	}
 
 	if t == 6 {
-		ding = fmt.Sprintf(TmplBackDing, o.WorkId, o.Username, o.Assigned, model.Host, o.Text)
-		mail = fmt.Sprintf(TmplMail, "提交", o.WorkId, o.Username, model.Host, model.Host, "已撤销")
+		ding = fmt.Sprintf(TmplBackDing, o.WorkId, o.Username, o.Assigned, YEARNING_ADDRESS, o.Text)
+		mail = fmt.Sprintf(TmplMail, "提交", o.WorkId, o.Username, YEARNING_ADDRESS, YEARNING_ADDRESS, "已撤销")
 	}
 
 	if model.GloOther.Query {
@@ -189,16 +196,16 @@ func MessagePush(c echo.Context, workid string, t uint, reject string) {
 		if t == 6 {
 			model.DB().Select("email").Where("username =?", op.Assigned).First(&user)
 			s.ToUser = user.Email
-			ding = fmt.Sprintf(TmplQueryRefer, op.WorkId, op.Username, op.Assigned, model.Host, op.Text)
-			mail = fmt.Sprintf(TmplMail, "查询申请", op.WorkId, op.Username, model.Host, model.Host, "已提交")
+			ding = fmt.Sprintf(TmplQueryRefer, op.WorkId, op.Username, op.Assigned, YEARNING_ADDRESS, op.Text)
+			mail = fmt.Sprintf(TmplMail, "查询申请", op.WorkId, op.Username, YEARNING_ADDRESS, YEARNING_ADDRESS, "已提交")
 		}
 		if t == 7 {
-			ding = fmt.Sprintf(TmplSuccessQuery, op.WorkId, op.Username, op.Assigned, model.Host)
-			mail = fmt.Sprintf(TmplMail, "查询申请", op.WorkId, op.Username, model.Host, model.Host, "已同意")
+			ding = fmt.Sprintf(TmplSuccessQuery, op.WorkId, op.Username, op.Assigned, YEARNING_ADDRESS)
+			mail = fmt.Sprintf(TmplMail, "查询申请", op.WorkId, op.Username, YEARNING_ADDRESS, YEARNING_ADDRESS, "已同意")
 		}
 		if t == 8 {
-			ding = fmt.Sprintf(TmplRejectQuery, op.WorkId, op.Username, op.Assigned, model.Host)
-			mail = fmt.Sprintf(TmplMail, "查询申请", op.WorkId, op.Username, model.Host, model.Host, "已驳回")
+			ding = fmt.Sprintf(TmplRejectQuery, op.WorkId, op.Username, op.Assigned, YEARNING_ADDRESS)
+			mail = fmt.Sprintf(TmplMail, "查询申请", op.WorkId, op.Username, YEARNING_ADDRESS, YEARNING_ADDRESS, "已驳回")
 		}
 	}
 
@@ -213,4 +220,15 @@ func MessagePush(c echo.Context, workid string, t uint, reject string) {
 
 		}
 	}
+
+	if wc != "" {
+		var leader model.CoreAccount
+		model.DB().Where("rule = ? and department like ?", "admin", "%"+user.Department+"%").First(&leader)
+		if leader.Username != "" {
+			fmt.Println(leader.Username)
+			go SentWechatMarkDown("PenZai", wc, GetWechatAppToken())
+		}
+	}
+
+	fmt.Println(wc)
 }

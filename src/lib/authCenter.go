@@ -3,13 +3,14 @@ package lib
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"io/ioutil"
 	"net/http"
 	"time"
 )
 
-const AUTH_URI = "http://auth.duolainc.com"
+const AUTH_URI = "http://ir-auth-inner.duolainc.com"
 const AUTH_LOGIN_URI = AUTH_URI + "/api/v1/token/user"
 const AUTH_WHOAMI_URI = AUTH_URI + "/api/v1/common/whoami"
 
@@ -60,6 +61,10 @@ type UserInfoResp struct {
 		Roles     []interface{} `json:"roles"`
 		UpdatedAt time.Time     `json:"updated_at"`
 	} `json:"result"`
+}
+
+type WechatTokenResp struct {
+	AccessToken string `json:"access_token"`
 }
 
 func CheckPasswordFromAuth(email string, password string) string {
@@ -122,4 +127,42 @@ func AuthCheckPassword(password, hashed string) bool {
 	} else {
 		return true
 	}
+}
+
+func GetWechatAppToken() string {
+	url := "https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=ww732d5cac9d0b344f&corpsecret=0-GZQ-T7b2VYbenRZV89debjjKnEwcvXlNKzj2f_D7I"
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer res.Body.Close()
+	var result WechatTokenResp
+	if body, err := ioutil.ReadAll(res.Body); err != nil {
+		return ""
+	} else {
+		_ = json.Unmarshal(body, &result)
+		return result.AccessToken
+	}
+}
+
+func SentWechatMarkDown(toUser, msg, token string) {
+	url := "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=" + token
+	requestBody, _ := json.Marshal(map[string]interface{}{
+		"touser":  toUser,
+		"msgtype": "markdown",
+		"agentid": 1000032,
+		"markdown": map[string]string{
+			"content": msg,
+		},
+		"safe": 0,
+	})
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
+	req.Header.Add("Content-Type", "application/json")
+	_, _ = client.Do(req)
 }
